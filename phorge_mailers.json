@@ -1,0 +1,12 @@
+[
+  {
+    "key": "gmail",
+    "type": "smtp",
+    "options": {
+    	"host": "smtp.gmail.com",
+    	"user": "gmail@gmail.com",
+    	"password": "gmailpassword",
+    	"protocol": "ssl"
+    }
+  }
+]
