@@ -43,11 +43,9 @@ services:
       - phorge_db:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/phorge_db_password
+    command: --innodb-buffer-pool-size=268435456 --local-infile=0 --max-allowed-packet=33554432 --sql-mode=STRICT_ALL_TABLES
     secrets:
       - phorge_db_password
-    configs:
-      - source: phorge_mariadb.cnf
-        target: /etc/mysql/conf.d/phorge.cnf
     networks:
       - phorge_db
 
@@ -94,8 +92,6 @@ secrets:
 
 configs:
   phorge_nginx.conf:
-    external: true
-  phorge_mariadb.cnf:
     external: true
   # phorge_mailers.json:
   #   external: true

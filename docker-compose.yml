@@ -42,9 +42,9 @@ services:
     # https://hub.docker.com/_/mariadb
     volumes:
       - phorge_db:/var/lib/mysql
-      - ./config/phorge_mariadb.cnf:/etc/mysql/conf.d/phorge.cnf
     environment:
       - MYSQL_ROOT_PASSWORD=CHANGEME
+    command: --innodb-buffer-pool-size=268435456 --local-infile=0 --max-allowed-packet=33554432 --sql-mode=STRICT_ALL_TABLES
     networks:
       - phorge_db
 

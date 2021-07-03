@@ -53,6 +53,6 @@ Run with `docker stack deploy --compose-file docker-swarm.yml phorge`
 
 ### [Docker Compose](https://docs.docker.com/compose/)
 
-You'll need to create a `config` folder and put `phorge_nginx.conf`,  `phorge_mailers.json`, and `phorge_mariadb.cnf` in it. If you're using NGINX for SSL also put your SSL certificate and SSL key in it.
+You'll need to create a `config` folder and put `phorge_nginx.conf` and `phorge_mailers.json` in it. If you're using NGINX for SSL also put your SSL certificate and SSL key in it.
 
 Run with `docker-compose up -d`. View using `127.0.0.1:9080`.
