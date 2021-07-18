@@ -1,0 +1,23 @@
+# https://caddyserver.com/docs/caddyfile
+# https://caddyserver.com/docs/caddyfile/options#global-options
+{
+	http_port {$HTTP_PORT:80}
+	https_port {$HTTPS_PORT:443}
+	ocsp_stapling {$OCSP_STAPLING:off}
+}
+
+{$DOMAIN:localhost} {
+	# https://caddyserver.com/docs/caddyfile/directives/root
+	root * /var/www/html/phorge/webroot
+	# https://caddyserver.com/docs/caddyfile/directives/rewrite
+	rewrite * /index.php?__path__={path}&{query}
+	# https://caddyserver.com/docs/caddyfile/directives/encode
+	encode {
+		zstd
+		gzip 6
+	}
+	# https://caddyserver.com/docs/caddyfile/directives/php_fastcgi
+	php_fastcgi phorge:9000 {
+		env HTTPS {$HTTPS:on}
+	}
+}

@@ -8,44 +8,39 @@ ROOT=/var/www/html
 CONFIG_BIN=${ROOT}/phorge/bin/config
 REPO_USER=$(stat -c '%U' /var/repo)
 
-# create PHP config files
+# PHP Configuration
+# -------------------------------------------------------------------------------
+
 echo "creating PHP config files"
 
-cat > "/usr/local/etc/php/conf.d/date.ini" <<EOF
-[Date]
-date.timezone = ${DATE_TIMEZONE:-America/Los_Angeles}
-EOF
-
-cat > "/usr/local/etc/php/conf.d/mysql.ini" <<EOF
-[mysqli]
-mysqli.allow_local_infile = ${MYSQLI_ALLOW_LOCAL_INFILE:-0}
-EOF
-
-cat > "/usr/local/etc/php/conf.d/opcache.ini" <<EOF
-opcache.memory_consumption=${OPCACHE_MEMORY_CONSUMPTION:-128}
-opcache.interned_strings_buffer=${OPCACHE_INTERNED_STRINGS_BUFFER:-8}
-opcache.max_accelerated_files=${OPCACHE_MAX_ACCELERATED_FILES:-4000}
-opcache.revalidate_freq=${OPCACHE_REVALIDATE_FREQ:-60}
-opcache.fast_shutdown=${OPCACHE_FAST_SHUTDOWN:-1}
-opcache.enable_cli=${OPCACHE_ENABLE_CLI:-1}
-opcache.validate_timestamps=${OPCACHE_VALIDATE_TIMESTAMPS:-0}
-EOF
-
+# https://github.com/php/php-src/blob/master/php.ini-production
+# https://www.php.net/manual/en/ini.list.php
 cat > "/usr/local/etc/php/conf.d/php-ph.ini" <<EOF
 [PHP]
 post_max_size = ${POST_MAX_SIZE:-32M}
 upload_max_filesize = ${UPLOAD_MAX_FILESIZE:-32M}
-memory_limit = ${MEMORY_LIMIT:-1028M}
+memory_limit = ${MEMORY_LIMIT:-1024M}
 expose_php = ${EXPOSE_PHP:-off}
-cgi.fix_pathinfo = ${CGIFIX_PATHINFO:-0}
+opcache.memory_consumption=${OPCACHE_MEMORY_CONSUMPTION:-128}
+opcache.max_accelerated_files=${OPCACHE_MAX_ACCELERATED_FILES:-10000}
+opcache.enable_cli=${OPCACHE_ENABLE_CLI:-1}
+opcache.validate_timestamps=${OPCACHE_VALIDATE_TIMESTAMPS:-0}
+[Date]
+date.timezone = ${DATE_TIMEZONE:-America/Los_Angeles}
+[mysqli]
+mysqli.allow_local_infile = ${MYSQLI_ALLOW_LOCAL_INFILE:-0}
 EOF
 
-# Set PHP-FPM conf
-sed -i "s/pm =.*/pm = ${FPM_PM:-dynamic}/" /usr/local/etc/php-fpm.d/www.conf
-sed -i "s/pm.max_children =.*/pm.max_children = ${FPM_MAX_CHILDREN:-5}/" /usr/local/etc/php-fpm.d/www.conf
-sed -i "s/pm.start_servers =.*/pm.start_servers = ${FPM_START_SERVERS:-2}/" /usr/local/etc/php-fpm.d/www.conf
-sed -i "s/pm.min_spare_servers =.*/pm.min_spare_servers = ${FPM_MIN_SPARE:-1}/" /usr/local/etc/php-fpm.d/www.conf
-sed -i "s/pm.max_spare_servers =.*/pm.max_spare_servers = ${FPM_MAX_SPARE:-3}/" /usr/local/etc/php-fpm.d/www.conf
+# https://www.php.net/manual/en/install.fpm.configuration.php
+sed -i "s/pm =.*/pm = ${FPM_PM:-ondemand}/" /usr/local/etc/php-fpm.d/www.conf
+sed -i "s/pm.max_children =.*/pm.max_children = ${FPM_MAX_CHILDREN:-10}/" /usr/local/etc/php-fpm.d/www.conf
+sed -i "s/pm.start_servers =.*/pm.start_servers = ${FPM_START_SERVERS:-3}/" /usr/local/etc/php-fpm.d/www.conf
+sed -i "s/pm.min_spare_servers =.*/pm.min_spare_servers = ${FPM_MIN_SPARE_SERVERS:-1}/" /usr/local/etc/php-fpm.d/www.conf
+sed -i "s/pm.max_spare_servers =.*/pm.max_spare_servers = ${FPM_MAX_SPARE_SERVERS:-2}/" /usr/local/etc/php-fpm.d/www.conf
+sed -i "s/;pm.max_requests =.*/pm.max_requests = ${FPM_MAX_REQUESTS:-500}/" /usr/local/etc/php-fpm.d/www.conf
+sed -i "s/;pm.process_idle_timeout =.*/pm.process_idle_timeout = ${FPM_PROCESS_IDLE_TIMEOUT:-10s}/" /usr/local/etc/php-fpm.d/www.conf
+
+# -------------------------------------------------------------------------------
 
 echo "creating other config files"
 
@@ -99,15 +94,14 @@ fi
 exec "/var/www/html/phorge/bin/ssh-auth" $@
 EOF
 
-# if nothing on the volume, do a full install by cloning repos
 if [ ! -d "${ROOT}/arcanist" ]; then
    echo "cloning arcanist"
-   sudo -n -u www-data git clone --single-branch --branch stable --depth 1 --shallow-submodules https://we.phorge.it/source/arcanist.git
+   sudo -n -u www-data git clone --branch master --depth 1 --shallow-submodules https://we.phorge.it/source/arcanist.git
 fi
 
 if [ ! -d "${ROOT}/phorge" ]; then
    echo "cloning phorge"
-   sudo -n -u www-data git clone --single-branch --branch stable --depth 1 --shallow-submodules https://we.phorge.it/source/phorge.git
+   sudo -n -u www-data git clone --branch master --depth 1 --shallow-submodules https://we.phorge.it/source/phorge.git
 fi
 
 # upgrade repos
@@ -120,6 +114,8 @@ if [ "${UPGRADE_ON_RESTART}" = "true" ]; then
    cd $ROOT/phorge
    sudo -n -u www-data git pull
 fi
+
+# -------------------------------------------------------------------------------
 
 echo "configuring phorge"
 

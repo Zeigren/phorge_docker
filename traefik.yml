@@ -15,7 +15,7 @@ services:
       - "--providers.docker.swarmmode=true"
       # Don't expose containers to the internet
       - "--providers.docker.exposedbydefault=false"
-      # Network used to connect containers to traefik
+      # Overlay network used to connect containers to traefik
       - "--providers.docker.network=traefik"
       # HTTP entrypoint
       - "--entrypoints.web.address=:80"

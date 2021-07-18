@@ -1,0 +1,76 @@
+# https://materialdesignicons.com/
+# https://concourse-ci.org/resources.html
+# fly -t kairohm set-pipeline --pipeline phorge --config .\concourse-ci.yml
+resources:
+  # https://github.com/concourse/git-resource
+  - name: git-repo
+    type: git
+    icon: git
+    public: true
+    source:
+      uri: https://github.com/Zeigren/phorge_docker.git
+      branch: main
+
+  # https://github.com/concourse/registry-image-resource
+  - name: github-image
+    type: registry-image
+    icon: github
+    public: true
+    check_every: never
+    source:
+      repository: ghcr.io/zeigren/phorge_docker
+      username: Zeigren
+      password: ((github_token.token))
+      tag: latest
+
+  - name: dockerhub-image
+    type: registry-image
+    icon: docker
+    public: true
+    check_every: never
+    source:
+      repository: zeigren/phorge
+      username: zeigren
+      password: ((dockerhub_password.password))
+      tag: latest
+
+# https://concourse-ci.org/jobs.html
+jobs:
+  - name: build-and-push
+    public: true
+    plan:
+      - get: git-repo
+        trigger: true
+      - load_var: version-tag
+        file: git-repo/version
+      - load_var: commit-date
+        file: git-repo/.git/commit_timestamp
+      # https://concourse-ci.org/tasks.html
+      - task: build-docker-image
+        privileged: true
+        config:
+          platform: linux
+          image_resource:
+            type: registry-image
+            source:
+              repository: concourse/oci-build-task
+              # https://github.com/concourse/oci-build-task
+          inputs:
+            - name: git-repo
+              path: .
+          outputs:
+            - name: image
+          params:
+            BUILD_ARG_VERSION: ((.:version-tag))
+            BUILD_ARG_DATE: ((.:commit-date))
+          run:
+            path: build
+      - in_parallel:
+          - put: github-image
+            params:
+              image: image/image.tar
+              version: ((.:version-tag))
+          - put: dockerhub-image
+            params:
+              image: image/image.tar
+              version: ((.:version-tag))

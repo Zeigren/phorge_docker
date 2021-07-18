@@ -1,20 +1,14 @@
 FROM php:7.4-fpm-alpine
 
-ARG BRANCH
-ARG COMMIT
 ARG DATE
-ARG URL
 ARG VERSION
 
-LABEL org.label-schema.schema-version="1.0" \
-	org.label-schema.build-date=$DATE \
-	org.label-schema.vendor="Zeigren" \
-	org.label-schema.name="zeigren/phorge" \
-	org.label-schema.url="https://hub.docker.com/r/zeigren/phorge" \
-	org.label-schema.version=$VERSION \
-	org.label-schema.vcs-url=$URL \
-	org.label-schema.vcs-branch=$BRANCH \
-	org.label-schema.vcs-ref=$COMMIT
+LABEL org.opencontainers.image.created=$DATE \
+    org.opencontainers.image.authors="Zeigren" \
+    org.opencontainers.image.url="https://github.com/Zeigren/phorge_docker" \
+    org.opencontainers.image.source="https://github.com/Zeigren/phorge_docker" \
+    org.opencontainers.image.version=$VERSION \
+    org.opencontainers.image.title="zeigren/phorge"
 
 RUN apk update \
 	&& apk add --no-cache bash openssh-server openssh-keygen git \
