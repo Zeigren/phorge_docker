@@ -21,7 +21,6 @@ resources:
       repository: ghcr.io/zeigren/phorge_docker
       username: Zeigren
       password: ((github_token.token))
-      tag: latest
 
   - name: dockerhub-image
     type: registry-image
@@ -32,7 +31,6 @@ resources:
       repository: zeigren/phorge
       username: zeigren
       password: ((dockerhub_password.password))
-      tag: latest
 
 # https://concourse-ci.org/jobs.html
 jobs:
@@ -70,7 +68,9 @@ jobs:
             params:
               image: image/image.tar
               version: ((.:version-tag))
+              bump_aliases: true
           - put: dockerhub-image
             params:
               image: image/image.tar
               version: ((.:version-tag))
+              bump_aliases: true

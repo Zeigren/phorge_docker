@@ -1,0 +1,106 @@
+version: "3.8"
+# https://docs.docker.com/compose/compose-file/compose-file-v3/
+services:
+  nginx:
+    image: nginx:alpine
+    # https://hub.docker.com/_/nginx
+    volumes:
+      - phorge_web:/var/www/html
+    networks:
+      - phorge
+    ports:
+      # CHANGE TO "80:80" IF USING NGINX FOR SSL TERMINATION
+      - 9080:80
+      # UNCOMMENT IF USING NGINX FOR SSL TERMINATION
+      # - 443:443
+    configs:
+      - source: phorge_nginx.conf
+        target: /etc/nginx/templates/nginx.conf.template
+    environment:
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+      # https://nginx.org/en/docs/ngx_core_module.html#worker_processes
+      - NGINX_WORKER_PROCESSES=auto
+      # https://nginx.org/en/docs/ngx_core_module.html#worker_rlimit_nofile
+      - NGINX_WORKER_RLIMIT_NOFILE=65535
+      # https://nginx.org/en/docs/ngx_core_module.html#worker_connections
+      - NGINX_WORKER_CONNECTIONS=65535
+      # https://nginx.org/en/docs/http/ngx_http_core_module.html#keepalive_timeout
+      - NGINX_KEEPALIVE_TIMEOUT=60s
+      # https://nginx.org/en/docs/http/ngx_http_core_module.html#client_max_body_size
+      - NGINX_CLIENT_MAX_BODY_SIZE=32m
+      # https://nginx.org/en/docs/http/ngx_http_core_module.html#client_body_timeout
+      - NGINX_CLIENT_BODY_TIMEOUT=90s
+      # https://nginx.org/en/docs/http/server_names.html
+      - NGINX_HOST=phorge.yourdomain.test
+      # UNCOMMENT IF USING NGINX FOR SSL TERMINATION
+      # - NGINX_SSL_CERT=yourdomain.test.crt
+      # - NGINX_SSL_KEY=yourdomain.test.key
+    # UNCOMMENT IF USING NGINX FOR SSL TERMINATION
+    # secrets:
+    #   - source: yourdomain.test.crt
+    #     target: /etc/nginx/certs/yourdomain.test.crt
+    #   - source: yourdomain.test.key
+    #     target: /etc/nginx/certs/yourdomain.test.key
+
+  mariadb:
+    image: mariadb:latest
+    # https://hub.docker.com/_/mariadb
+    volumes:
+      - phorge_db:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/phorge_db_password
+    command: --innodb-buffer-pool-size=268435456 --local-infile=0 --max-allowed-packet=33554432 --sql-mode=STRICT_ALL_TABLES
+    secrets:
+      - phorge_db_password
+    networks:
+      - phorge_db
+
+  phorge:
+    image: zeigren/phorge:latest # ghcr.io/zeigren/phorge_docker:latest
+    # https://hub.docker.com/r/zeigren/phorge
+    volumes:
+      - phorge_web:/var/www/html
+      - phorge_ssh:/etc/ssh
+      - phorge_repo:/var/repo
+    environment:
+      # set UPGRADE_ON_RESTART to true to update phorge
+      - UPGRADE_ON_RESTART=true
+      - PH_BASE_URI=https://phorge.yourdomain.test
+      - PH_MYSQL_PASS=DOCKER-SECRET->phorge_db_password
+      # - PH_CLUSTER_MAILERS=true
+    networks:
+      - phorge
+      - phorge_db
+    ports:
+      # SSH Port
+      - 2530:2530
+    # configs:
+    #   - source: phorge_mailers.json
+    #     target: /usr/src/docker_ph/mailers.json
+    secrets:
+      - phorge_db_password
+
+volumes:
+  phorge_web:
+  phorge_db:
+  phorge_ssh:
+  phorge_repo:
+
+networks:
+  phorge:
+  phorge_db:
+
+secrets:
+  phorge_db_password:
+    external: true
+  # UNCOMMENT IF USING NGINX FOR SSL TERMINATION
+  # yourdomain.test.crt:
+  #   external: true
+  # yourdomain.test.key:
+  #   external: true
+
+configs:
+  phorge_nginx.conf:
+    external: true
+  # phorge_mailers.json:
+  #   external: true
