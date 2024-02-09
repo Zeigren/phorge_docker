@@ -11,7 +11,7 @@ LABEL org.opencontainers.image.created=$DATE \
     org.opencontainers.image.title="zeigren/phorge"
 
 RUN apk update \
-	&& apk add --no-cache bash openssh-server openssh-keygen git \
+	&& apk add --no-cache bash openssh git \
 	git-daemon subversion mercurial freetype libpng libjpeg-turbo libzip \
 	py-pygments sudo sed procps zlib imagemagick \
 	&& apk add --no-cache --virtual .build-deps \
